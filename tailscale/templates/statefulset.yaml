@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "tailscale.fullname" . }}
+  labels:
+    app: tailscale
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: tailscale
+  serviceName: {{ include "tailscale.fullname" . }}
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: tailscale
+    spec:
+      terminationGracePeriodSeconds: 0
+      serviceAccountName: {{ include "tailscale.fullname" . }}
+      podManagementPolicy: Parallel
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      hostNetwork: {{ .Values.hostNetwork }}
+      {{- with .Values.dnsConfig }}
+      dnsConfig:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.dnsPolicy }}
+      dnsPolicy: {{ .Values.dnsPolicy }}
+      {{- end }}
+      containers:
+        - name: tailscale
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          env:
+            - name: TS_KUBE_SECRET
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: TS_AUTH_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tailscale.auth.secretName }}
+                  key: {{ .Values.tailscale.auth.secretKey }}
+            {{- if .Values.tailscale.extraEnv }}
+            {{- tpl (.Values.tailscale.extraEnv | toYaml) . | nindent 12 }}
+            {{- end }}
+          {{- if .Values.tailscale.ports }}
+          ports:
+            {{- toYaml .Values.tailscale.ports | nindent 12 }}
+          {{- end }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- with .Values.resources }}
+          resources: {{ toYaml . | nindent 16 }}
+          {{- end }}
+          {{- if .Values.volumeMounts }}
+          volumeMounts:
+              {{- toYaml .Values.volumeMounts | nindent 12}}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.volumes }}
+      volumes:
+         {{- toYaml .Values.volumes | nindent 8}}
+      {{- end }}

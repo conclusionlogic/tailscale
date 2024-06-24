@@ -1,0 +1,13 @@
+apiVersion: v2
+name: tailscale
+description: Deploy a Tailscale subnet router on Kubernetes
+type: application
+version: "0.0.1"
+appVersion: "v1.66.4"
+home: https://github.com/conclusionlogic/tailscale
+sources:
+  - https://github.com/conclusionlogic/tailscale
+maintainers:
+  - name: conclusionlogic
+    email: ergo.loorits@glintpay.com
+    url: https://glintpay.com
